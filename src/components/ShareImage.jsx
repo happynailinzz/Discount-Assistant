@@ -1,6 +1,7 @@
 /**
  * ShareImage 组件 - 分享图片生成组件
  * 用于生成可分享的"实惠小贴士"图片
+ * 优化移动端兼容性和图片生成质量
  */
 
 import React, { useRef, useState } from 'react'
@@ -20,7 +21,7 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
   const templateRef = useRef(null)
 
   /**
-   * 生成分享图片
+   * 生成分享图片 - 优化移动端兼容性
    */
   const generateImage = async () => {
     if (!templateRef.current) {
@@ -31,37 +32,94 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
     try {
       setIsGenerating(true)
       
-      // 等待一小段时间确保DOM完全渲染
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // 移动端需要更长时间确保DOM完全渲染
+      await new Promise(resolve => setTimeout(resolve, 300))
       
-      // 使用html2canvas生成图片 - 微信朋友圈最佳规格 3:4 比例
+      // 获取设备像素比，确保高清图片
+      const pixelRatio = window.devicePixelRatio || 1
+      const scale = Math.min(pixelRatio * 1.5, 3) // 限制最大缩放，避免内存问题
+      
+      // 优化移动端的html2canvas配置
       const canvas = await html2canvas(templateRef.current, {
-        backgroundColor: '#7c3aed', // 设置背景色
-        scale: 2, // 高清图片
+        backgroundColor: '#7c3aed',
+        scale: scale,
         useCORS: true,
         allowTaint: false,
-        height: 480,
         width: 360,
+        height: 480,
         scrollX: 0,
         scrollY: 0,
-        logging: false, // 关闭日志减少干扰
-        onclone: (clonedDoc) => {
+        x: 0,
+        y: 0,
+        logging: false,
+        // 移动端优化配置
+        foreignObjectRendering: false, // 禁用foreignObject渲染，提高兼容性
+        removeContainer: true, // 移除容器，避免布局问题
+        windowWidth: 360,
+        windowHeight: 480,
+        onclone: (clonedDoc, element) => {
           // 确保克隆的文档中包含所有样式
           const clonedElement = clonedDoc.querySelector('[data-share-template]')
           if (clonedElement) {
+            // 重置所有可能影响渲染的样式
             clonedElement.style.transform = 'none'
-            clonedElement.style.position = 'static'
+            clonedElement.style.position = 'relative'
+            clonedElement.style.top = '0'
+            clonedElement.style.left = '0'
+            clonedElement.style.margin = '0'
+            clonedElement.style.padding = '0'
+            clonedElement.style.width = '360px'
+            clonedElement.style.height = '480px'
+            clonedElement.style.overflow = 'hidden'
+            clonedElement.style.boxSizing = 'border-box'
+            
+            // 确保所有子元素的定位正确
+            const absoluteElements = clonedElement.querySelectorAll('.absolute')
+            absoluteElements.forEach(el => {
+              el.style.position = 'absolute'
+            })
           }
+          
+          // 为克隆文档添加必要的CSS
+          const style = clonedDoc.createElement('style')
+          style.textContent = `
+            * { box-sizing: border-box; }
+            .absolute { position: absolute; }
+            .relative { position: relative; }
+            .z-10 { z-index: 10; }
+            .overflow-hidden { overflow: hidden; }
+            .rounded-full { border-radius: 9999px; }
+            .rounded-xl { border-radius: 0.75rem; }
+            .rounded-2xl { border-radius: 1rem; }
+            .rounded-3xl { border-radius: 1.5rem; }
+            .bg-white\\/8 { background-color: rgba(255, 255, 255, 0.08); }
+            .bg-white\\/5 { background-color: rgba(255, 255, 255, 0.05); }
+            .bg-white\\/6 { background-color: rgba(255, 255, 255, 0.06); }
+            .bg-white\\/15 { background-color: rgba(255, 255, 255, 0.15); }
+            .bg-white\\/20 { background-color: rgba(255, 255, 255, 0.20); }
+            .bg-white\\/25 { background-color: rgba(255, 255, 255, 0.25); }
+            .bg-white\\/30 { background-color: rgba(255, 255, 255, 0.30); }
+            .backdrop-blur-sm { backdrop-filter: blur(4px); }
+            .backdrop-blur { backdrop-filter: blur(8px); }
+            .backdrop-blur-md { backdrop-filter: blur(12px); }
+          `
+          clonedDoc.head.appendChild(style)
         }
       })
 
-      // 转换为图片数据
-      const imageDataUrl = canvas.toDataURL('image/png', 0.9)
+      // 转换为图片数据，提高图片质量
+      const imageDataUrl = canvas.toDataURL('image/png', 1.0)
       setGeneratedImage(imageDataUrl)
       
     } catch (error) {
       console.error('生成图片失败:', error)
-      alert('生成图片失败，请重试。错误信息：' + error.message)
+      // 提供更详细的错误信息
+      const errorMsg = error.message.includes('tainted') 
+        ? '图片包含跨域资源，请刷新页面重试'
+        : error.message.includes('size') 
+        ? '图片尺寸过大，请重试'
+        : '生成图片失败，请重试'
+      alert(`${errorMsg}\n\n错误详情：${error.message}`)
     } finally {
       setIsGenerating(false)
     }
@@ -74,26 +132,31 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
     if (!generatedImage) return
 
     try {
-      // 移动端优先尝试触发下载
-      const link = document.createElement('a')
-      const fileName = `实惠小贴士-${new Date().toLocaleDateString().replace(/\//g, '-')}.png`
+      // 检测是否为移动设备
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
-      link.download = fileName
-      link.href = generatedImage
-      link.style.display = 'none'
-      
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      // 给用户明确的提示
-      setTimeout(() => {
-        alert('图片已触发下载！\n\n移动端用户请：\n1. 长按下方预览图片\n2. 选择"保存到相册"或"保存图片"\n\n这是移动端浏览器的限制，需要用户手动操作保存。')
-      }, 500)
+      if (isMobile) {
+        // 移动端直接显示提示，引导用户手动保存
+        alert('移动端保存步骤：\n\n1. 长按下方预览图片\n2. 选择"保存图片"或"下载图片"\n3. 图片将保存到相册\n\n注：这是浏览器安全限制，需要手动操作')
+      } else {
+        // 桌面端尝试自动下载
+        const link = document.createElement('a')
+        const fileName = `实惠小贴士-${new Date().toLocaleDateString().replace(/\//g, '-')}.png`
+        
+        link.download = fileName
+        link.href = generatedImage
+        link.style.display = 'none'
+        
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        alert('图片已下载到下载文件夹！')
+      }
       
     } catch (error) {
       console.error('下载失败:', error)
-      alert('自动下载失败，请长按图片手动保存')
+      alert('请长按图片手动保存到相册')
     }
   }
 
@@ -104,7 +167,7 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
     if (!generatedImage) return
 
     try {
-      // 移动端优先使用原生分享API
+      // 优先使用原生分享API（主要在移动端可用）
       if (navigator.share) {
         try {
           // 将base64转换为blob
@@ -115,20 +178,22 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
           if (navigator.canShare && navigator.canShare({ files: [new File([blob], '实惠小贴士.png', { type: 'image/png' })] })) {
             const file = new File([blob], '实惠小贴士.png', { type: 'image/png' })
             await navigator.share({
-              title: '实惠小贴士',
-              text: '来看看我的购物比价分析！',
+              title: '实惠小贴士 - 购物比价神器',
+              text: '我用实惠助手找到了最划算的商品！快来看看我的购物比价分析 💰',
               files: [file]
             })
             return
           } else {
             // 不支持文件分享，只分享链接和文本
             await navigator.share({
-              title: '实惠小贴士',
-              text: '来看看我的购物比价分析！\n\n' + window.location.href,
+              title: '实惠小贴士 - 购物比价神器',
+              text: '我用实惠助手找到了最划算的商品！快来看看我的购物比价分析 💰\n\n访问链接：' + window.location.href,
               url: window.location.href
             })
-            // 然后自动下载图片
-            downloadImage()
+            // 分享后提示用户保存图片
+            setTimeout(() => {
+              alert('分享成功！\n\n图片保存提示：\n请长按下方预览图片，选择"保存图片"保存到相册')
+            }, 1000)
             return
           }
         } catch (shareError) {
@@ -136,24 +201,21 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
         }
       }
 
-      // 桌面端或不支持分享的浏览器：直接下载
-      downloadImage()
-      
-      // 尝试复制链接到剪贴板
+      // 备选方案：复制链接 + 提示保存图片
       if (navigator.clipboard) {
         try {
           await navigator.clipboard.writeText(window.location.href)
-          alert('图片已保存到下载文件夹，链接已复制到剪贴板！')
+          alert('分享链接已复制到剪贴板！\n\n图片保存：请长按下方图片，选择"保存到相册"')
         } catch (clipError) {
-          alert('图片已保存到下载文件夹！')
+          alert('请手动复制页面链接分享，并长按下方图片保存到相册')
         }
       } else {
-        alert('图片已保存到下载文件夹！')
+        alert('请手动复制页面链接分享，并长按下方图片保存到相册')
       }
+      
     } catch (error) {
       console.error('分享失败:', error)
-      downloadImage()
-      alert('图片已保存到下载文件夹！')
+      alert('请长按下方图片保存到相册，并手动分享页面链接')
     }
   }
 
@@ -193,6 +255,11 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                   src={generatedImage} 
                   alt="实惠小贴士分享图" 
                   className="w-full rounded-lg shadow-lg"
+                  style={{ 
+                    maxWidth: '100%',
+                    height: 'auto',
+                    aspectRatio: '3/4'  // 保持3:4比例
+                  }}
                 />
                 <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm rounded-lg p-2">
                   <p className="text-white text-xs text-center">
@@ -204,14 +271,14 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={shareImage}
-                  className="bg-green-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center"
+                  className="bg-green-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center touch-target"
                 >
                   <span className="mr-1">📤</span>
                   分享图片
                 </button>
                 <button
                   onClick={downloadImage}
-                  className="bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center"
+                  className="bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center touch-target"
                 >
                   <span className="mr-1">💾</span>
                   保存图片
@@ -224,9 +291,9 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                   <div>
                     <p className="text-sm text-yellow-800 font-medium mb-1">移动端保存提示</p>
                     <p className="text-xs text-yellow-700">
-                      1. 点击"分享图片"可通过系统分享<br/>
+                      1. 点击"分享图片"使用系统分享功能<br/>
                       2. 长按上方图片选择"保存图片"<br/>
-                      3. 或使用"保存图片"按钮触发下载
+                      3. 或点击"保存图片"查看保存说明
                     </p>
                   </div>
                 </div>
@@ -234,127 +301,350 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
               
               <button
                 onClick={() => setGeneratedImage(null)}
-                className="w-full text-blue-600 py-2 text-sm hover:text-blue-700"
+                className="w-full text-blue-600 py-2 text-sm hover:text-blue-700 touch-target"
               >
                 重新生成
               </button>
             </div>
           ) : (
-            // 显示模板预览
+            // 显示模板预览 - 优化移动端显示
             <div className="space-y-4">
-              {/* 模板预览 */}
-              <div 
-                ref={templateRef}
-                data-share-template
-                className="bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 p-5 rounded-3xl text-white relative overflow-hidden"
-                style={{ 
-                  width: '360px', 
-                  height: '480px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif'
-                }}
-              >
-                {/* 装饰性背景元素 */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="absolute top-20 right-10 w-16 h-16 bg-white/5 rounded-full"></div>
-                <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/6 rounded-full translate-y-10 -translate-x-10"></div>
-                <div className="absolute bottom-32 left-8 w-8 h-8 bg-white/8 rounded-full"></div>
-                
-                {/* 头部 - 优化布局 */}
-                <div className="text-center mb-4 relative z-10">
-                  <div className="inline-block bg-white/25 backdrop-blur-sm rounded-2xl px-4 py-2 mb-2 shadow-lg">
-                    <h1 className="text-lg font-bold flex items-center justify-center">
-                      <span className="mr-2">🛒</span>
-                      实惠助手
-                    </h1>
+              {/* 模板预览 - 使用响应式尺寸 */}
+              <div className="flex justify-center">
+                <div 
+                  ref={templateRef}
+                  data-share-template
+                  className="bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 text-white relative overflow-hidden"
+                  style={{ 
+                    width: '360px', 
+                    height: '480px',
+                    borderRadius: '24px',
+                    padding: '20px',
+                    boxSizing: 'border-box',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif',
+                    position: 'relative'
+                  }}
+                >
+                  {/* 装饰性背景元素 - 优化定位 */}
+                  <div className="absolute" style={{
+                    top: '-64px', 
+                    right: '-64px', 
+                    width: '128px', 
+                    height: '128px', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)', 
+                    borderRadius: '50%'
+                  }}></div>
+                  <div className="absolute" style={{
+                    top: '80px', 
+                    right: '40px', 
+                    width: '64px', 
+                    height: '64px', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                    borderRadius: '50%'
+                  }}></div>
+                  <div className="absolute" style={{
+                    bottom: '-40px', 
+                    left: '-40px', 
+                    width: '80px', 
+                    height: '80px', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.06)', 
+                    borderRadius: '50%'
+                  }}></div>
+                  <div className="absolute" style={{
+                    bottom: '128px', 
+                    left: '32px', 
+                    width: '32px', 
+                    height: '32px', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)', 
+                    borderRadius: '50%'
+                  }}></div>
+                  
+                  {/* 头部 - 优化布局 */}
+                  <div style={{ textAlign: 'center', marginBottom: '16px', position: 'relative', zIndex: 10 }}>
+                    <div style={{
+                      display: 'inline-block',
+                      backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                      backdropFilter: 'blur(4px)',
+                      borderRadius: '16px',
+                      padding: '8px 16px',
+                      marginBottom: '8px',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      <h1 style={{ 
+                        fontSize: '18px', 
+                        fontWeight: 'bold', 
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}>
+                        <span>🛒</span>
+                        实惠助手
+                      </h1>
+                    </div>
+                    <p style={{ 
+                      color: 'rgba(255, 255, 255, 0.95)', 
+                      fontSize: '14px', 
+                      fontWeight: '600', 
+                      marginBottom: '8px',
+                      letterSpacing: '0.025em',
+                      margin: '0 0 8px 0'
+                    }}>精明消费，省钱有道</p>
+                    <div style={{
+                      display: 'inline-block',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '20px',
+                      padding: '4px 12px'
+                    }}>
+                      <p style={{ 
+                        color: 'rgba(255, 255, 255, 0.85)', 
+                        fontSize: '12px', 
+                        fontWeight: '500',
+                        margin: 0
+                      }}>{currentDate}</p>
+                    </div>
                   </div>
-                  <p className="text-white/95 text-sm font-semibold mb-2 tracking-wide">精明消费，省钱有道</p>
-                  <div className="inline-block bg-white/15 backdrop-blur rounded-full px-3 py-1">
-                    <p className="text-white/85 text-xs font-medium">{currentDate}</p>
-                  </div>
-                </div>
 
-                {/* 最实惠选择 - 优化设计 */}
-                {bestProduct && (
-                  <div className="bg-white/30 backdrop-blur-md rounded-2xl p-4 mb-4 border border-white/40 shadow-xl relative z-10">
-                    <div className="flex items-center mb-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mr-3 shadow-lg">
-                        <span className="text-white font-bold text-sm">💡</span>
-                      </div>
-                      <h3 className="text-base font-bold text-white">最实惠选择</h3>
-                    </div>
-                    
-                    <div className="bg-white/20 backdrop-blur rounded-xl p-3 mb-3">
-                      <p className="text-base font-bold text-center text-white mb-1">
-                        {bestProduct.name || `商品${bestProduct.id}`}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-gradient-to-r from-green-400/80 to-emerald-500/80 backdrop-blur rounded-xl p-3 text-center shadow-lg">
-                      <p className="text-xs text-white/90 font-medium mb-1">单价仅需</p>
-                      <p className="text-2xl font-black text-white tracking-tight">
-                        ¥{bestProduct.formattedUnitPrice}
-                        <span className="text-sm font-semibold ml-1">/{selectedUnit}</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 价格排名 - 优化设计 */}
-                {rankings.length > 1 && (
-                  <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-lg relative z-10">
-                    <div className="flex items-center mb-3">
-                      <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                        <span className="text-white font-bold text-xs">📊</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-white">价格排名</h4>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {rankings.slice(0, 3).map((product, index) => (
-                        <div key={product.id} className="bg-white/15 backdrop-blur rounded-xl p-2.5 flex items-center justify-between shadow-sm">
-                          <div className="flex items-center flex-1">
-                            <div className={`
-                              w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 shadow-sm
-                              ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-yellow-900' : 
-                                index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700' : 
-                                'bg-gradient-to-br from-orange-400 to-orange-500 text-orange-900'}
-                            `}>
-                              {index + 1}
-                            </div>
-                            <span className="text-xs font-semibold text-white/95 truncate max-w-[120px]">
-                              {product.name || `商品${product.id}`}
-                            </span>
-                          </div>
-                          <div className="bg-white/25 backdrop-blur rounded-lg px-2.5 py-1 shadow-sm">
-                            <span className="font-bold text-xs text-white">¥{product.formattedUnitPrice}</span>
-                          </div>
+                  {/* 最实惠选择 - 优化设计 */}
+                  {bestProduct && (
+                    <div style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.30)',
+                      backdropFilter: 'blur(12px)',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      marginBottom: '16px',
+                      border: '1px solid rgba(255, 255, 255, 0.40)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                      position: 'relative',
+                      zIndex: 10
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          background: 'linear-gradient(135deg, #fbbf24 0%, #f97316 100%)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: '12px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                          <span style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>💡</span>
                         </div>
-                      ))}
-                    </div>
-                    
-                    {rankings.length > 3 && (
-                      <div className="mt-2 text-center">
-                        <p className="text-xs text-white/70 font-medium">
-                          还有 {rankings.length - 3} 个商品...
+                        <h3 style={{ 
+                          fontSize: '16px', 
+                          fontWeight: 'bold', 
+                          color: 'white',
+                          margin: 0
+                        }}>最实惠选择</h3>
+                      </div>
+                      
+                      <div style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.20)',
+                        backdropFilter: 'blur(8px)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        marginBottom: '12px'
+                      }}>
+                        <p style={{ 
+                          fontSize: '16px', 
+                          fontWeight: 'bold', 
+                          textAlign: 'center', 
+                          color: 'white',
+                          margin: '0 0 4px 0'
+                        }}>
+                          {bestProduct.name || `商品${bestProduct.id}`}
                         </p>
                       </div>
-                    )}
-                  </div>
-                )}
+                      
+                      <div style={{
+                        background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.8) 0%, rgba(16, 185, 129, 0.8) 100%)',
+                        backdropFilter: 'blur(8px)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        textAlign: 'center',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                      }}>
+                        <p style={{ 
+                          fontSize: '12px', 
+                          color: 'rgba(255, 255, 255, 0.9)', 
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          margin: '0 0 4px 0'
+                        }}>单价仅需</p>
+                        <p style={{ 
+                          fontSize: '24px', 
+                          fontWeight: '900', 
+                          color: 'white',
+                          letterSpacing: '-0.025em',
+                          margin: 0
+                        }}>
+                          ¥{bestProduct.formattedUnitPrice}
+                          <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: '4px' }}>/{selectedUnit}</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-                {/* 底部品牌区域 - 优化设计 */}
-                <div className="absolute bottom-5 left-5 right-5 text-center relative z-10">
-                  <div className="border-t border-white/25 pt-3">
-                    <div className="bg-white/25 backdrop-blur-md rounded-full px-4 py-2 inline-block shadow-lg">
-                      <p className="text-xs text-white/95 font-semibold flex items-center justify-center">
-                        <span className="mr-1.5">✨</span>
-                        由 实惠助手 智能生成
-                        <span className="ml-1.5">✨</span>
+                  {/* 价格排名 - 优化设计 */}
+                  {rankings.length > 1 && (
+                    <div style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.20)',
+                      backdropFilter: 'blur(12px)',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      border: '1px solid rgba(255, 255, 255, 0.30)',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      position: 'relative',
+                      zIndex: 10
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          background: 'linear-gradient(135deg, #60a5fa 0%, #6366f1 100%)',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: '12px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                          <span style={{ color: 'white', fontWeight: 'bold', fontSize: '12px' }}>📊</span>
+                        </div>
+                        <h4 style={{ 
+                          fontSize: '14px', 
+                          fontWeight: 'bold', 
+                          color: 'white',
+                          margin: 0
+                        }}>价格排名</h4>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {rankings.slice(0, 3).map((product, index) => (
+                          <div key={product.id} style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                            backdropFilter: 'blur(8px)',
+                            borderRadius: '12px',
+                            padding: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                              <div style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                marginRight: '12px',
+                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                background: index === 0 ? 'linear-gradient(135deg, #fbbf24 0%, #eab308 100%)' :
+                                           index === 1 ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' :
+                                           'linear-gradient(135deg, #fb923c 0%, #f97316 100%)',
+                                color: index === 0 ? '#92400e' : index === 1 ? '#374151' : '#ea580c'
+                              }}>
+                                {index + 1}
+                              </div>
+                              <span style={{ 
+                                fontSize: '12px', 
+                                fontWeight: '600', 
+                                color: 'rgba(255, 255, 255, 0.95)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: '120px'
+                              }}>
+                                {product.name || `商品${product.id}`}
+                              </span>
+                            </div>
+                            <div style={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                              backdropFilter: 'blur(8px)',
+                              borderRadius: '8px',
+                              padding: '4px 10px',
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                            }}>
+                              <span style={{ 
+                                fontWeight: 'bold', 
+                                fontSize: '12px', 
+                                color: 'white' 
+                              }}>¥{product.formattedUnitPrice}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {rankings.length > 3 && (
+                        <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                          <p style={{ 
+                            fontSize: '12px', 
+                            color: 'rgba(255, 255, 255, 0.7)', 
+                            fontWeight: '500',
+                            margin: 0
+                          }}>
+                            还有 {rankings.length - 3} 个商品...
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 底部品牌区域 - 优化设计 */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '20px',
+                    left: '20px',
+                    right: '20px',
+                    textAlign: 'center',
+                    zIndex: 10
+                  }}>
+                    <div style={{
+                      borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+                      paddingTop: '12px'
+                    }}>
+                      <div style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                        backdropFilter: 'blur(12px)',
+                        borderRadius: '20px',
+                        padding: '8px 16px',
+                        display: 'inline-block',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                      }}>
+                        <p style={{ 
+                          fontSize: '12px', 
+                          color: 'rgba(255, 255, 255, 0.95)', 
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          margin: 0
+                        }}>
+                          <span>✨</span>
+                          由 实惠助手 智能生成
+                          <span>✨</span>
+                        </p>
+                      </div>
+                      <p style={{ 
+                        fontSize: '12px', 
+                        color: 'rgba(255, 255, 255, 0.6)', 
+                        fontWeight: '500',
+                        marginTop: '8px',
+                        letterSpacing: '0.025em',
+                        margin: '8px 0 0 0'
+                      }}>
+                        让每一分钱都花得更值
                       </p>
                     </div>
-                    <p className="text-xs text-white/60 font-medium mt-2 tracking-wide">
-                      让每一分钱都花得更值
-                    </p>
                   </div>
                 </div>
               </div>
@@ -363,7 +653,7 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
               <button
                 onClick={generateImage}
                 disabled={isGenerating || rankings.length === 0}
-                className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-target"
               >
                 {isGenerating ? '生成中...' : '生成分享图片'}
               </button>

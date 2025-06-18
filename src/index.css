@@ -377,6 +377,36 @@ body {
     font-size: 16px !important;
     font-weight: 600;
   }
+
+  /* 分享对话框优化 */
+  .fixed.inset-0 {
+    padding: 8px;
+  }
+  
+  /* 分享图片模板优化 */
+  [data-share-template] {
+    transform: scale(0.95);
+    transform-origin: center;
+    max-width: calc(100vw - 32px) !important;
+  }
+  
+  /* 图片预览优化 */
+  .space-y-4 img {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    object-fit: contain;
+  }
+  
+  /* 按钮网格优化 */
+  .grid.grid-cols-2 {
+    gap: 12px;
+  }
+  
+  .grid.grid-cols-2 > button {
+    min-height: 44px; /* 符合苹果触摸规范 */
+    font-size: 14px;
+  }
 }
 
 /* 滚动条优化 */
@@ -411,6 +441,8 @@ body {
 .touch-target {
   min-height: 44px;
   min-width: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Focus 状态优化 */
@@ -551,5 +583,40 @@ body {
   /* 动画工具类 */
   .animate-fade-in {
     animation: fade-in 0.5s ease-out;
+  }
+}
+
+/* 图片长按保存提示优化 */
+@media (max-width: 640px) {
+  .space-y-4 .relative img {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: default; /* 允许长按菜单 */
+  }
+}
+
+/* 分享对话框滚动优化 */
+.max-h-\[90vh\] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+.max-h-\[90vh\]::-webkit-scrollbar {
+  width: 4px;
+}
+
+.max-h-\[90vh\]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.max-h-\[90vh\]::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 2px;
+}
+
+/* 避免iOS Safari的视口问题 */
+@supports (-webkit-touch-callout: none) {
+  .fixed.inset-0 {
+    height: -webkit-fill-available;
   }
 } 
