@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    
+    <!-- 移动端适配关键配置 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- iOS Web App 配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="实惠助手" />
+    
+    <!-- Android PWA 配置 -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#22c55e" />
+    
+    <!-- SEO 和社交分享 -->
+    <meta name="description" content="实惠助手 - 商品单价比较神器，轻松找到最实惠的选择" />
+    <meta name="keywords" content="单价计算,比价,购物助手,实惠,省钱" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="实惠助手" />
+    <meta property="og:description" content="商品单价比较神器，轻松找到最实惠的选择" />
+    <meta property="og:type" content="website" />
+    
+    <!-- 图标配置 -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    
+    <!-- 字体预加载 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <title>实惠助手 - 商品单价比较神器</title>
+  </head>
+  <body class="bg-neutral-50 text-neutral-800 font-sans antialiased">
+    <!-- 应用容器 -->
+    <div id="root" class="min-h-screen"></div>
+    
+    <!-- 预加载脚本 -->
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- 移动端优化脚本 -->
+    <script>
+      // 移动端滚动优化
+      document.addEventListener('DOMContentLoaded', function() {
+        // 确保body和html元素支持滚动
+        document.body.style.webkitOverflowScrolling = 'touch';
+        document.body.style.overflowY = 'auto';
+        document.documentElement.style.webkitOverflowScrolling = 'touch';
+        
+        // 设置合适的touch action
+        document.body.style.touchAction = 'pan-y';
+        
+        // 确保主容器可以滚动
+        const root = document.getElementById('root');
+        if (root) {
+          root.style.webkitOverflowScrolling = 'touch';
+          root.style.overflowY = 'auto';
+          root.style.minHeight = '100vh';
+        }
+      });
+      
+      // 禁用移动端双击缩放
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (event) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          event.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, false);
+      
+      // 防止意外的缩放行为
+      document.addEventListener('gesturestart', function (event) {
+        event.preventDefault();
+      });
+      
+      document.addEventListener('gesturechange', function (event) {
+        event.preventDefault();
+      });
+      
+      document.addEventListener('gestureend', function (event) {
+        event.preventDefault();
+      });
+    </script>
+  </body>
+</html> 

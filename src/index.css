@@ -1,0 +1,555 @@
+/**
+ * 实惠助手 - 全局样式文件
+ * 包含Tailwind CSS导入和移动端优化的全局样式
+ */
+
+/* Tailwind CSS 导入 */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* 全局CSS变量 */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-right: env(safe-area-inset-right);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
+}
+
+/* 全局样式优化 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* 移动端触摸优化 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* 移动端滚动优化 */
+  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+  /* 防止缩放 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  /* 确保移动端正常滚动 */
+  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* 现代化渐变背景 */
+.bg-gradient-main {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-card {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+.bg-gradient-secondary {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* 优化卡片样式 */
+.card-modern {
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow: 
+    0 8px 32px rgba(31, 38, 135, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 40px rgba(31, 38, 135, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 统计卡片样式 */
+.stat-card {
+  background: rgba(255, 255, 255, 0.98);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 
+    0 4px 20px rgba(99, 102, 241, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 30px rgba(99, 102, 241, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 优化按钮样式 */
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 16px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* 输入框优化 */
+.input-modern {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(99, 102, 241, 0.1);
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.input-modern:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 1);
+}
+
+/* 标签样式优化 */
+.label-modern {
+  color: #374151;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* 价格显示优化 */
+.price-display {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid rgba(99, 102, 241, 0.15);
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.price-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.price-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #6366f1;
+  margin: 4px 0;
+}
+
+.price-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* 分析结果卡片 */
+.analysis-card {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 24px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 20px 40px rgba(99, 102, 241, 0.3),
+    0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* 排名标签 */
+.rank-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.rank-1 {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #92400e;
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  color: #374151;
+}
+
+.rank-3 {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #9a3412;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 响应式优化 */
+@media (max-width: 640px) {
+  .card-modern {
+    border-radius: 20px;
+    /* 确保卡片宽度一致，不设置额外margin */
+    margin: 0 !important;
+  }
+  
+  .analysis-card {
+    border-radius: 20px;
+    /* 确保分析卡片宽度一致 */
+    margin: 0 !important;
+  }
+  
+  .price-display {
+    border-radius: 16px;
+    padding: 12px;
+  }
+  
+  .price-value {
+    font-size: 20px;
+  }
+
+  /* 移动端卡片宽度强制统一和间距优化 */
+  .card-modern, .analysis-card {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 移动端间距优化 */
+  .space-y-6 > * + * {
+    margin-top: 24px !important;
+  }
+  
+  .mb-8 {
+    margin-bottom: 32px !important;
+  }
+
+  /* 移动端字体大小优化 - 解决字体偏小问题 */
+  body {
+    font-size: 16px; /* 基础字体大小增大 */
+    line-height: 1.5;
+    /* 移动端滚动优化 */
+    background-attachment: scroll;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+
+  /* 确保主容器可滚动 */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    position: relative;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .text-xs {
+    font-size: 14px !important; /* 原来12px，增大到14px */
+  }
+
+  .text-sm {
+    font-size: 16px !important; /* 原来14px，增大到16px */
+  }
+
+  .text-base {
+    font-size: 18px !important; /* 原来16px，增大到18px */
+  }
+
+  .text-lg {
+    font-size: 20px !important; /* 原来18px，增大到20px */
+  }
+
+  .text-xl {
+    font-size: 22px !important; /* 原来20px，增大到22px */
+  }
+
+  .text-2xl {
+    font-size: 26px !important; /* 原来24px，增大到26px */
+  }
+
+  /* 输入框字体大小 - 防止iOS Safari自动缩放 */
+  input, select, textarea {
+    font-size: 16px !important;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 按钮文字大小 */
+  button {
+    font-size: 16px !important;
+    min-height: 44px; /* 确保触摸目标足够大 */
+    font-weight: 500;
+  }
+
+  /* 标题字体增大 */
+  h1 { font-size: 26px !important; }
+  h2 { font-size: 22px !important; }
+  h3 { font-size: 20px !important; }
+  h4 { font-size: 18px !important; }
+
+  /* 标签和说明文字 */
+  label {
+    font-size: 16px !important;
+    font-weight: 600;
+  }
+}
+
+/* 滚动条优化 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+/* 安全区域适配 */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 触摸目标优化 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Focus 状态优化 */
+.focus-ring:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* 数据可视化样式 */
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-circle {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.progress-bg {
+  stroke: rgba(255, 255, 255, 0.2);
+}
+
+.progress-fill {
+  stroke: #ffffff;
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray 0.6s ease-in-out;
+}
+
+/* 加载状态 */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 成功/错误状态 */
+.success-state {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.error-state {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+/* 自定义动画关键帧 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 通用工具类 */
+@layer utilities {
+  /* 安全区域处理 */
+  .safe-top {
+    padding-top: var(--safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: var(--safe-area-inset-bottom);
+  }
+  
+  .safe-left {
+    padding-left: var(--safe-area-inset-left);
+  }
+  
+  .safe-right {
+    padding-right: var(--safe-area-inset-right);
+  }
+  
+  /* 数字输入框优化 */
+  .number-input {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  
+  .number-input::-webkit-outer-spin-button,
+  .number-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  /* 触摸友好的最小尺寸 */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 卡片阴影效果 */
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* 软阴影效果 */
+  .soft-shadow {
+    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 
+                0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  /* 动画工具类 */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+} 
