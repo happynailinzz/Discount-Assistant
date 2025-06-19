@@ -39,59 +39,88 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
       const pixelRatio = window.devicePixelRatio || 1
       const scale = Math.min(pixelRatio * 1.5, 3) // 限制最大缩放，避免内存问题
       
-      // 优化移动端的html2canvas配置
-      const canvas = await html2canvas(templateRef.current, {
-        backgroundColor: '#7c3aed',
-        scale: scale,
-        useCORS: true,
-        allowTaint: false,
-        width: 360,
-        height: 480,
-        scrollX: 0,
-        scrollY: 0,
-        x: 0,
-        y: 0,
-        logging: false,
-        // 移动端优化配置
-        foreignObjectRendering: false, // 禁用foreignObject渲染，提高兼容性
-        removeContainer: true, // 移除容器，避免布局问题
-        windowWidth: 360,
-        windowHeight: 480,
+             // 优化html2canvas配置确保与预览一致
+       const canvas = await html2canvas(templateRef.current, {
+         backgroundColor: 'transparent', // 使用透明背景，让模板自己的渐变背景生效
+         scale: scale,
+         useCORS: true,
+         allowTaint: false,
+         width: 360,
+         height: 540,
+         scrollX: 0,
+         scrollY: 0,
+         x: 0,
+         y: 0,
+         logging: false,
+         // 关键配置：确保与预览渲染一致
+         foreignObjectRendering: false,
+         removeContainer: false, // 保留容器以维持布局
+         windowWidth: 360,
+         windowHeight: 540,
+         // 新增配置：确保样式准确复制
+         imageTimeout: 10000, // 增加图片加载超时
+         letterRendering: true, // 确保文字渲染准确
+                   ignoreElements: (element) => {
+            // 忽略可能干扰的元素
+            return element.classList && (
+              element.classList.contains('cursor-pointer') ||
+              element.classList.contains('hover:') ||
+              element.getAttribute('role') === 'button'
+            )
+          },
         onclone: (clonedDoc, element) => {
           // 确保克隆的文档中包含所有样式
           const clonedElement = clonedDoc.querySelector('[data-share-template]')
           if (clonedElement) {
-            // 重置所有可能影响渲染的样式
-            clonedElement.style.transform = 'none'
-            clonedElement.style.position = 'relative'
-            clonedElement.style.top = '0'
-            clonedElement.style.left = '0'
-            clonedElement.style.margin = '0'
-            clonedElement.style.padding = '0'
+            // 保持与预览完全一致的样式 - 不重置任何样式
+            // 只确保必要的布局属性
             clonedElement.style.width = '360px'
-            clonedElement.style.height = '480px'
+            clonedElement.style.height = '540px' // 更新高度匹配当前模板
+            clonedElement.style.position = 'relative'
             clonedElement.style.overflow = 'hidden'
             clonedElement.style.boxSizing = 'border-box'
             
-            // 确保所有子元素的定位正确
-            const absoluteElements = clonedElement.querySelectorAll('.absolute')
-            absoluteElements.forEach(el => {
-              el.style.position = 'absolute'
-            })
+            // 确保flexbox属性保持一致
+            clonedElement.style.display = 'flex'
+            clonedElement.style.flexDirection = 'column'
+            clonedElement.style.alignItems = 'center'
+            clonedElement.style.justifyContent = 'flex-start'
+            
+            // 确保内边距与预览一致
+            clonedElement.style.padding = '20px'
+            
+            // 保持所有内联样式不变，不重置任何transform或position
           }
           
-          // 为克隆文档添加必要的CSS
+          // 为克隆文档添加必要的CSS - 确保与预览样式完全一致
           const style = clonedDoc.createElement('style')
           style.textContent = `
-            * { box-sizing: border-box; }
+            * { 
+              box-sizing: border-box; 
+              margin: 0; 
+              padding: 0; 
+            }
+            
+            /* 确保字体渲染一致 */
+            body, * {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
+            }
+            
+            /* 基础定位类 */
             .absolute { position: absolute; }
             .relative { position: relative; }
             .z-10 { z-index: 10; }
             .overflow-hidden { overflow: hidden; }
+            
+            /* 圆角样式 */
             .rounded-full { border-radius: 9999px; }
             .rounded-xl { border-radius: 0.75rem; }
             .rounded-2xl { border-radius: 1rem; }
             .rounded-3xl { border-radius: 1.5rem; }
+            
+            /* 背景透明度 */
             .bg-white\\/8 { background-color: rgba(255, 255, 255, 0.08); }
             .bg-white\\/5 { background-color: rgba(255, 255, 255, 0.05); }
             .bg-white\\/6 { background-color: rgba(255, 255, 255, 0.06); }
@@ -99,9 +128,31 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
             .bg-white\\/20 { background-color: rgba(255, 255, 255, 0.20); }
             .bg-white\\/25 { background-color: rgba(255, 255, 255, 0.25); }
             .bg-white\\/30 { background-color: rgba(255, 255, 255, 0.30); }
+            
+            /* 背景模糊效果 */
             .backdrop-blur-sm { backdrop-filter: blur(4px); }
             .backdrop-blur { backdrop-filter: blur(8px); }
             .backdrop-blur-md { backdrop-filter: blur(12px); }
+            
+            /* Flexbox 布局 */
+            .flex { display: flex; }
+            .flex-col { flex-direction: column; }
+            .items-center { align-items: center; }
+            .justify-center { justify-content: center; }
+            .justify-between { justify-content: space-between; }
+            .justify-start { justify-content: flex-start; }
+            
+            /* 确保渐变背景正确渲染 */
+            .bg-gradient-to-br {
+              background: linear-gradient(to bottom right, #a855f7, #3730a3, #2563eb);
+            }
+            
+            /* 文字样式确保一致 */
+            h1, h2, h3, h4, h5, h6, p, span {
+              margin: 0;
+              padding: 0;
+              line-height: 1.2;
+            }
           `
           clonedDoc.head.appendChild(style)
         }
@@ -317,16 +368,21 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                   className="bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 text-white relative overflow-hidden"
                   style={{ 
                     width: '360px', 
-                    height: '480px',
+                    height: '540px',
                     borderRadius: '24px',
-                    padding: '20px',
+                    padding: '20px', // 增加内边距确保内容不贴边
                     boxSizing: 'border-box',
                     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif',
-                    position: 'relative'
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center', // 确保水平居中
+                    justifyContent: 'flex-start' // 垂直从顶部开始
                   }}
                 >
                   {/* 装饰性背景元素 - 优化定位 */}
-                  <div className="absolute" style={{
+                  <div style={{
+                    position: 'absolute',
                     top: '-64px', 
                     right: '-64px', 
                     width: '128px', 
@@ -334,7 +390,8 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                     backgroundColor: 'rgba(255, 255, 255, 0.08)', 
                     borderRadius: '50%'
                   }}></div>
-                  <div className="absolute" style={{
+                  <div style={{
+                    position: 'absolute',
                     top: '80px', 
                     right: '40px', 
                     width: '64px', 
@@ -342,7 +399,8 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                     backgroundColor: 'rgba(255, 255, 255, 0.05)', 
                     borderRadius: '50%'
                   }}></div>
-                  <div className="absolute" style={{
+                  <div style={{
+                    position: 'absolute',
                     bottom: '-40px', 
                     left: '-40px', 
                     width: '80px', 
@@ -350,8 +408,9 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                     backgroundColor: 'rgba(255, 255, 255, 0.06)', 
                     borderRadius: '50%'
                   }}></div>
-                  <div className="absolute" style={{
-                    bottom: '128px', 
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '80px', 
                     left: '32px', 
                     width: '32px', 
                     height: '32px', 
@@ -359,10 +418,22 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                     borderRadius: '50%'
                   }}></div>
                   
-                  {/* 头部 - 优化布局 */}
-                  <div style={{ textAlign: 'center', marginBottom: '16px', position: 'relative', zIndex: 10 }}>
+                  {/* 头部 - 完全居中设计 */}
+                  <div style={{ 
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center', 
+                    marginBottom: '16px',
+                    position: 'relative', 
+                    zIndex: 10
+                  }}>
                     <div style={{
-                      display: 'inline-block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       backgroundColor: 'rgba(255, 255, 255, 0.25)',
                       backdropFilter: 'blur(4px)',
                       borderRadius: '16px',
@@ -370,182 +441,237 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                       marginBottom: '8px',
                       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                     }}>
+                      <span style={{ fontSize: '18px', marginRight: '8px' }}>🛒</span>
                       <h1 style={{ 
                         fontSize: '18px', 
                         fontWeight: 'bold', 
                         margin: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
+                        color: 'white',
+                        lineHeight: '1.2'
                       }}>
-                        <span>🛒</span>
                         实惠助手
                       </h1>
                     </div>
                     <p style={{ 
                       color: 'rgba(255, 255, 255, 0.95)', 
-                      fontSize: '14px', 
+                      fontSize: '13px', 
                       fontWeight: '600', 
                       marginBottom: '8px',
                       letterSpacing: '0.025em',
-                      margin: '0 0 8px 0'
+                      margin: '0 0 8px 0',
+                      textAlign: 'center',
+                      lineHeight: '1.3'
                     }}>精明消费，省钱有道</p>
                     <div style={{
-                      display: 'inline-block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
                       backdropFilter: 'blur(8px)',
-                      borderRadius: '20px',
+                      borderRadius: '16px',
                       padding: '4px 12px'
                     }}>
                       <p style={{ 
                         color: 'rgba(255, 255, 255, 0.85)', 
-                        fontSize: '12px', 
+                        fontSize: '11px', 
                         fontWeight: '500',
-                        margin: 0
+                        margin: 0,
+                        textAlign: 'center',
+                        lineHeight: '1.2'
                       }}>{currentDate}</p>
                     </div>
                   </div>
 
-                  {/* 最实惠选择 - 优化设计 */}
+                  {/* 最实惠选择 - 完全居中设计 */}
                   {bestProduct && (
                     <div style={{
+                      width: '100%',
                       backgroundColor: 'rgba(255, 255, 255, 0.30)',
                       backdropFilter: 'blur(12px)',
-                      borderRadius: '16px',
-                      padding: '16px',
-                      marginBottom: '16px',
+                      borderRadius: '14px',
+                      padding: '14px',
+                      marginBottom: '14px',
                       border: '1px solid rgba(255, 255, 255, 0.40)',
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
                       position: 'relative',
-                      zIndex: 10
+                      zIndex: 10,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        marginBottom: '10px',
+                        width: '100%'
+                      }}>
                         <div style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '30px',
+                          height: '30px',
                           background: 'linear-gradient(135deg, #fbbf24 0%, #f97316 100%)',
                           borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          marginRight: '12px',
+                          marginRight: '10px',
                           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                         }}>
-                          <span style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>💡</span>
+                          <span style={{ fontSize: '14px' }}>💡</span>
                         </div>
                         <h3 style={{ 
-                          fontSize: '16px', 
+                          fontSize: '15px', 
                           fontWeight: 'bold', 
                           color: 'white',
-                          margin: 0
+                          margin: 0,
+                          lineHeight: '1.2'
                         }}>最实惠选择</h3>
                       </div>
                       
                       <div style={{
+                        width: '100%',
                         backgroundColor: 'rgba(255, 255, 255, 0.20)',
                         backdropFilter: 'blur(8px)',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        marginBottom: '12px'
+                        borderRadius: '10px',
+                        padding: '10px',
+                        marginBottom: '10px',
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}>
                         <p style={{ 
-                          fontSize: '16px', 
+                          fontSize: '15px', 
                           fontWeight: 'bold', 
-                          textAlign: 'center', 
                           color: 'white',
-                          margin: '0 0 4px 0'
+                          margin: 0,
+                          lineHeight: '1.2'
                         }}>
                           {bestProduct.name || `商品${bestProduct.id}`}
                         </p>
                       </div>
                       
                       <div style={{
+                        width: '100%',
                         background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.8) 0%, rgba(16, 185, 129, 0.8) 100%)',
                         backdropFilter: 'blur(8px)',
-                        borderRadius: '12px',
-                        padding: '12px',
+                        borderRadius: '10px',
+                        padding: '10px',
                         textAlign: 'center',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}>
                         <p style={{ 
-                          fontSize: '12px', 
+                          fontSize: '11px', 
                           color: 'rgba(255, 255, 255, 0.9)', 
                           fontWeight: '500',
-                          marginBottom: '4px',
-                          margin: '0 0 4px 0'
+                          margin: '0 0 4px 0',
+                          lineHeight: '1.2'
                         }}>单价仅需</p>
                         <p style={{ 
-                          fontSize: '24px', 
+                          fontSize: '22px', 
                           fontWeight: '900', 
                           color: 'white',
                           letterSpacing: '-0.025em',
-                          margin: 0
+                          margin: 0,
+                          lineHeight: '1.1',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}>
                           ¥{bestProduct.formattedUnitPrice}
-                          <span style={{ fontSize: '14px', fontWeight: '600', marginLeft: '4px' }}>/{selectedUnit}</span>
+                          <span style={{ fontSize: '13px', fontWeight: '600', marginLeft: '3px' }}>/{selectedUnit}</span>
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* 价格排名 - 优化设计 */}
+                  {/* 价格排名 - 完全居中设计 */}
                   {rankings.length > 1 && (
                     <div style={{
+                      width: '100%',
                       backgroundColor: 'rgba(255, 255, 255, 0.20)',
                       backdropFilter: 'blur(12px)',
-                      borderRadius: '16px',
-                      padding: '16px',
+                      borderRadius: '14px',
+                      padding: '14px',
+                      marginBottom: '18px',
                       border: '1px solid rgba(255, 255, 255, 0.30)',
                       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                       position: 'relative',
-                      zIndex: 10
+                      zIndex: 10,
+                      flex: '1',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        marginBottom: '10px',
+                        width: '100%'
+                      }}>
                         <div style={{
-                          width: '28px',
-                          height: '28px',
+                          width: '26px',
+                          height: '26px',
                           background: 'linear-gradient(135deg, #60a5fa 0%, #6366f1 100%)',
-                          borderRadius: '8px',
+                          borderRadius: '6px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          marginRight: '12px',
+                          marginRight: '8px',
                           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                         }}>
-                          <span style={{ color: 'white', fontWeight: 'bold', fontSize: '12px' }}>📊</span>
+                          <span style={{ fontSize: '12px' }}>📊</span>
                         </div>
                         <h4 style={{ 
-                          fontSize: '14px', 
+                          fontSize: '13px', 
                           fontWeight: 'bold', 
                           color: 'white',
-                          margin: 0
+                          margin: 0,
+                          lineHeight: '1.2'
                         }}>价格排名</h4>
                       </div>
                       
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ 
+                        width: '100%',
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '8px' 
+                      }}>
                         {rankings.slice(0, 3).map((product, index) => (
                           <div key={product.id} style={{
+                            width: '100%',
                             backgroundColor: 'rgba(255, 255, 255, 0.15)',
                             backdropFilter: 'blur(8px)',
-                            borderRadius: '12px',
-                            padding: '10px',
+                            borderRadius: '8px',
+                            padding: '8px 10px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                            minHeight: '36px' // 确保足够高度
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              flex: 1, 
+                              minWidth: 0 
+                            }}>
                               <div style={{
-                                width: '24px',
-                                height: '24px',
+                                width: '22px',
+                                height: '22px',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '12px',
+                                fontSize: '11px',
                                 fontWeight: 'bold',
-                                marginRight: '12px',
+                                marginRight: '10px',
+                                flexShrink: 0,
                                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                                 background: index === 0 ? 'linear-gradient(135deg, #fbbf24 0%, #eab308 100%)' :
                                            index === 1 ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' :
@@ -555,13 +681,14 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                                 {index + 1}
                               </div>
                               <span style={{ 
-                                fontSize: '12px', 
+                                fontSize: '11px', 
                                 fontWeight: '600', 
                                 color: 'rgba(255, 255, 255, 0.95)',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                maxWidth: '120px'
+                                flex: 1,
+                                lineHeight: '1.3'
                               }}>
                                 {product.name || `商品${product.id}`}
                               </span>
@@ -569,14 +696,20 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                             <div style={{
                               backgroundColor: 'rgba(255, 255, 255, 0.25)',
                               backdropFilter: 'blur(8px)',
-                              borderRadius: '8px',
-                              padding: '4px 10px',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                              borderRadius: '6px',
+                              padding: '3px 8px',
+                              marginLeft: '8px',
+                              flexShrink: 0,
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
                             }}>
                               <span style={{ 
                                 fontWeight: 'bold', 
-                                fontSize: '12px', 
-                                color: 'white' 
+                                fontSize: '11px', 
+                                color: 'white',
+                                lineHeight: '1.2'
                               }}>¥{product.formattedUnitPrice}</span>
                             </div>
                           </div>
@@ -584,12 +717,19 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                       </div>
                       
                       {rankings.length > 3 && (
-                        <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                        <div style={{ 
+                          marginTop: '8px', 
+                          textAlign: 'center',
+                          width: '100%',
+                          display: 'flex',
+                          justifyContent: 'center'
+                        }}>
                           <p style={{ 
-                            fontSize: '12px', 
+                            fontSize: '10px', 
                             color: 'rgba(255, 255, 255, 0.7)', 
                             fontWeight: '500',
-                            margin: 0
+                            margin: 0,
+                            lineHeight: '1.2'
                           }}>
                             还有 {rankings.length - 3} 个商品...
                           </p>
@@ -598,49 +738,57 @@ const ShareImage = ({ rankings, selectedUnit, selectedCategory, onClose }) => {
                     </div>
                   )}
 
-                  {/* 底部品牌区域 - 优化设计 */}
+                  {/* 底部品牌区域 - 完全居中设计 */}
                   <div style={{
-                    position: 'absolute',
-                    bottom: '20px',
-                    left: '20px',
-                    right: '20px',
+                    width: '100%',
+                    marginTop: 'auto',
+                    paddingTop: '12px',
                     textAlign: 'center',
-                    zIndex: 10
+                    position: 'relative',
+                    zIndex: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     <div style={{
                       borderTop: '1px solid rgba(255, 255, 255, 0.25)',
-                      paddingTop: '12px'
+                      paddingTop: '10px',
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
                       <div style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.25)',
                         backdropFilter: 'blur(12px)',
-                        borderRadius: '20px',
-                        padding: '8px 16px',
-                        display: 'inline-block',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        borderRadius: '16px',
+                        padding: '6px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        marginBottom: '6px'
                       }}>
-                        <p style={{ 
-                          fontSize: '12px', 
+                        <span style={{ fontSize: '11px', marginRight: '5px' }}>✨</span>
+                        <span style={{ 
+                          fontSize: '11px', 
                           color: 'rgba(255, 255, 255, 0.95)', 
                           fontWeight: '600',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          margin: 0
-                        }}>
-                          <span>✨</span>
-                          由 实惠助手 智能生成
-                          <span>✨</span>
-                        </p>
+                          margin: 0,
+                          lineHeight: '1.2'
+                        }}>由 实惠助手 智能生成</span>
+                        <span style={{ fontSize: '11px', marginLeft: '5px' }}>✨</span>
                       </div>
                       <p style={{ 
-                        fontSize: '12px', 
+                        fontSize: '10px', 
                         color: 'rgba(255, 255, 255, 0.6)', 
                         fontWeight: '500',
-                        marginTop: '8px',
                         letterSpacing: '0.025em',
-                        margin: '8px 0 0 0'
+                        margin: 0,
+                        textAlign: 'center',
+                        lineHeight: '1.2'
                       }}>
                         让每一分钱都花得更值
                       </p>
